@@ -14,6 +14,7 @@ type typ =
   | TArray of typ
   | TStruct of string * (string * typ) list
   | TPtr of typ
+  | TBox of typ
 
 type expr =
   | EInt of loc * int64

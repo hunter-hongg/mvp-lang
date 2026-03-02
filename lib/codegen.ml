@@ -61,6 +61,7 @@ let rec cxx_type_of_typ = function
   | TArray typ -> "std::vector<" ^ cxx_type_of_typ typ ^ ">"
   | TStruct (name, _) -> name
   | TPtr typ -> cxx_type_of_typ typ ^ "*"
+  | TBox typ -> "mvp_builtin_box<" ^ cxx_type_of_typ typ ^ ">"
   | _ -> failwith "The type is not supported in C++ code generation"
 
 let rec cxx_stmt_of_stmt indent_level ctx stmt = 
@@ -157,6 +158,8 @@ and cxx_expr_of_expr indent_level ctx expr =
         | "string_concat" -> "mvp_string_concat"
         | "string_parse" -> "mvp_string_parse"
         | "string_length" -> "mvp_string_length"
+        | "box_new" -> "mvp_box_new"
+        | "box_deref" -> "mvp_box_deref"
         | _ -> 
             (* 将a.b.c.foo转换为a::b::c::foo *)
             let lst = (String.split_on_char '.' name) in

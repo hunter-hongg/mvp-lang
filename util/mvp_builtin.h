@@ -13,6 +13,8 @@
 #include <string>
 #include <vector>
 #include <format>
+#include <memory>
+#include <utility>
 
 #include "mvp_copyable.h"
 
@@ -123,6 +125,54 @@ inline mvp_builtin_unit mvp_exit(mvp_builtin_int code) {
 inline mvp_builtin_unit mvp_abort() {
   std::abort();
   return mvp_builtin_void; // never reach
+}
+
+template <typename T>
+struct mvp_builtin_box {
+    std::unique_ptr<T> value;
+    mvp_builtin_box() : value(std::make_unique<T>()) {}
+    // 构造函数：接受一个值并移动构造到堆上
+    explicit mvp_builtin_box(T val)
+        : value(std::make_unique<T>(std::move(val))) {}
+
+    // 拷贝构造函数：深拷贝（需要 T 支持拷贝）
+    mvp_builtin_box(const mvp_builtin_box& other)
+        : value(std::make_unique<T>(*other.value)) {}
+
+    // 拷贝赋值运算符
+    mvp_builtin_box& operator=(const mvp_builtin_box& other) {
+        if (this != &other) {
+            value = std::make_unique<T>(*other.value);
+        }
+        return *this;
+    }
+
+    // 移动构造函数：默认即可（unique_ptr 已支持移动）
+    mvp_builtin_box(mvp_builtin_box&& other) noexcept = default;
+
+    // 移动赋值运算符：默认即可
+    mvp_builtin_box& operator=(mvp_builtin_box&& other) noexcept = default;
+
+    // 析构函数：默认即可（unique_ptr 自动释放）
+    ~mvp_builtin_box() = default;
+
+    // 解引用操作符
+    T& operator*() { return *value; }
+    const T& operator*() const { return *value; }
+
+    // 箭头操作符
+    T* operator->() { return value.get(); }
+    const T* operator->() const { return value.get(); }
+};
+
+template <typename T>
+inline mvp_builtin_box<T> mvp_box_new(T value) {
+  return mvp_builtin_box<T>(value);
+}
+
+template <typename T>
+inline T mvp_box_deref(mvp_builtin_box<T> const &box) {
+  return *box;
 }
 
 #endif // MVP_BUILTIN_H

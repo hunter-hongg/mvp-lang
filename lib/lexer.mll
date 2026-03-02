@@ -100,6 +100,7 @@ rule token = parse
   | "export"            { EXPORT }
   | "import"            { IMPORT }
   | "ptr"               { PTR }
+  | "box"               { BOX }
   | "addr"              { ADDR }
   | "deref"             { DEREF }
   | digits as num       { INT_LIT (Int64.of_string num) }

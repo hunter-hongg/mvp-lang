@@ -41,7 +41,7 @@ type context = {
 let rec is_copy_type types t =
   match t with
   | TInt | TBool | TFloat32 | TFloat64 | TChar -> true
-  | TString | TArray _ | TPtr _ -> false
+  | TString | TArray _ | TPtr _ | TBox _ -> false
   | TStruct (name, _) ->
       try
         let fields = Env.find name types in

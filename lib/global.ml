@@ -13,5 +13,7 @@ let builtin_functions = [
   "panic" ;
   "string_concat" ;
   "string_parse" ;
-  "string_length" 
+  "string_length" ;
+  "box_new" ;
+  "box_deref" ;
 ]

@@ -20,7 +20,7 @@
 %token PLUS MINUS STAR EQEQ NEQ AS
 %token STRUCT REF MOVE CLONE PRINT IF ELIF ELSE MUT RETURN TEST
 %token INT BOOL FLOAT32 FLOAT64 CHAR STRING
-%token EOF
+%token EOF BOX
 %token OWN COLON LT GT PTR ADDR DEREF
 %token CHOOSE WHEN OTHERWISE MODULE EXPORT IMPORT
 %token UNSAFE TRUSTED C_KEYWORD VOID
@@ -207,6 +207,7 @@ typ:
   | STRING { TString }
   | LBRACKET t = typ RBRACKET { TArray t }
   | PTR LT t = typ GT { TPtr t }
+  | BOX LT t = typ GT { TBox t }
   | t = type_path { TStruct (t, []) }
 
 type_path:
