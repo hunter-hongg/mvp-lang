@@ -92,6 +92,8 @@ let rec cxx_stmt_of_stmt indent_level ctx stmt =
         match expr with 
         | EMove (_, _) -> ""
         | EClone (_, _) -> ""
+        | ECall (_, _, _) -> ""
+        | EMacro (_, _, _) -> ""
         | _ -> 
         ind ^ "static_assert(is_copyable<decltype(" ^ name 
         ^ ")>, \"A non-Copy type can't be assigned without clone or move\");\n"
@@ -158,6 +160,8 @@ and cxx_expr_of_expr indent_level ctx expr =
         | "string_concat" -> "mvp_string_concat"
         | "string_parse" -> "mvp_string_parse"
         | "string_length" -> "mvp_string_length"
+        | "string_make" -> "mvp_string_make"
+        | "string_from" -> "mvp_to_string"
         | "box_new" -> "mvp_box_new"
         | "box_deref" -> "mvp_box_deref"
         | _ -> 
@@ -224,6 +228,7 @@ and cxx_expr_of_expr indent_level ctx expr =
   | EVoid _ -> "mvp_builtin_void"
   | EAddr (_, expr) -> "&(" ^ cxx_expr_of_expr indent_level ctx expr ^ ")"
   | EDeref (_, expr) -> "*(" ^ cxx_expr_of_expr indent_level ctx expr ^ ")"
+  | EMacro (_, _, _) -> ""
 
 let cxx_deal_module name = 
     if String.compare name "main" == 0 then 

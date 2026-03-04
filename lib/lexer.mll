@@ -72,6 +72,7 @@ rule token = parse
   | "!="                { NEQ }
   | "<"                 { LT }
   | ">"                 { GT }
+  | "!"                 { NOT }
   | "as"                { AS }
   | "struct"            { STRUCT }
   | "ref"               { REF }

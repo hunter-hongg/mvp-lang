@@ -14,6 +14,7 @@ module SymbolTable = Mvp_lib.Symbol_table
 module Dependency_graph = Mvp_lib.Dependency_graph
 module Codegen = Mvp_lib.Codegen
 module Global = Mvp_lib.Global
+module Macro_expand = Mvp_lib.Macro_expand
 
 let compute_sha256 filename =
   Digest.to_hex (Digest.file filename)
@@ -273,6 +274,8 @@ let get_build_dir_rel release =
 let compile_program_obj ~verbose ~input_file ~output_file ~_release =
   if verbose then eprintf "Parsing %s...\n%!" input_file;
   let ast = parse_input_file input_file in
+  if verbose then eprintf "Expanding macros...\n%!";
+  let ast = Macro_expand.expand_macros ast in
   if verbose then eprintf "Checking semantics...\n%!";
   check_semantics ast;
   if verbose then eprintf "Checking symbol table...\n%!";

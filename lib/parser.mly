@@ -20,7 +20,7 @@
 %token PLUS MINUS STAR EQEQ NEQ AS
 %token STRUCT REF MOVE CLONE PRINT IF ELIF ELSE MUT RETURN TEST
 %token INT BOOL FLOAT32 FLOAT64 CHAR STRING
-%token EOF BOX
+%token EOF BOX NOT
 %token OWN COLON LT GT PTR ADDR DEREF
 %token CHOOSE WHEN OTHERWISE MODULE EXPORT IMPORT
 %token UNSAFE TRUSTED C_KEYWORD VOID
@@ -93,6 +93,7 @@ field_decl:
 
 expr:
   | e = call_expr { e }
+  | e = macro_expr { e }
   | e1 = expr PLUS e2 = expr { EBinOp ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, Add, e1, e2) }
   | e1 = expr MINUS e2 = expr { EBinOp ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, Sub, e1, e2) }
   | e1 = expr STAR e2 = expr { EBinOp ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, Mul, e1, e2) }
@@ -149,6 +150,9 @@ call_expr:
       ECall ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, final_path, args)
     }
   | name = IDENT LPAREN args = separated_list(COMMA, expr) RPAREN { ECall ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, name, args) }
+
+macro_expr: 
+  | id = IDENT NOT LPAREN args = separated_list(COMMA, expr) RPAREN { EMacro ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, id, args) }
 
 stmt:
   | IDENT COLONEQ expr { SLet ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, false, $1, $3) }

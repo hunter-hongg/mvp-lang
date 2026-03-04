@@ -31,6 +31,7 @@ type expr =
   | EIf of loc * expr * expr * expr option
   | EChoose of loc * expr * (expr * expr) list * expr option  (* choose (var) { when (val) { ... } otherwise { ... } } *)
   | ECall of loc * string * expr list
+  | EMacro of loc * string * expr list
   | ECast of loc * expr * typ
   | EBlock of loc * stmt list * expr option  (* 块级表达式：语句列表 + 可选的返回表达式 *)
   | EArrayLit of loc * expr list  (* 数组字面量：[]{expr1, expr2, ...} *)

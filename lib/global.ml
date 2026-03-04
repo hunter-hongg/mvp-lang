@@ -14,6 +14,8 @@ let builtin_functions = [
   "string_concat" ;
   "string_parse" ;
   "string_length" ;
+  "string_make" ;
+  "string_from" ;
   "box_new" ;
   "box_deref" ;
 ]

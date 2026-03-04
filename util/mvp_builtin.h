@@ -175,4 +175,29 @@ inline T mvp_box_deref(mvp_builtin_box<T> const &box) {
   return *box;
 }
 
+inline mvp_builtin_int mvp_string_parse(mvp_builtin_string const &str) {
+  mvp_builtin_int result = 0;
+  for (char c : str) {
+    if (c < '0' || c > '9') {
+      mvp_panic("Invalid number format");
+    }
+    result = result * 10 + (c - '0');
+  }
+  return result;
+}
+
+inline mvp_builtin_string mvp_string_concat(mvp_builtin_string const &a, mvp_builtin_string const &b) {
+  return a + b;
+}
+
+inline mvp_builtin_int mvp_string_length(mvp_builtin_string const &str) {
+  return str.size();
+}
+
+inline mvp_builtin_string mvp_string_make(mvp_builtin_string const &init, int size) {
+  mvp_builtin_string res = init;
+  res.reserve(size);
+  return res;
+}
+
 #endif // MVP_BUILTIN_H
