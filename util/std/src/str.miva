@@ -1,4 +1,4 @@
-module "std.str"
+module std.str
 
 concat = (ref a: string, ref b: string): string => string_concat(a, b)
 

@@ -1,2 +1,2 @@
-module "std.box"
+module std.box
 

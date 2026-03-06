@@ -16,18 +16,49 @@
 %token <bool> BOOL_LIT
 %token <string> IDENT
 
-%token EQ COLONEQ DARROW LPAREN RPAREN LBRACE RBRACE COMMA DOT  LBRACKET RBRACKET
+%token EQ COLONEQ DARROW LPAREN RPAREN LBRACE RBRACE COMMA DOT LBRACKET RBRACKET
 %token PLUS MINUS STAR EQEQ NEQ AS
-%token STRUCT REF MOVE CLONE PRINT IF ELIF ELSE MUT RETURN TEST
+%token STRUCT REF MOVE CLONE IF ELIF ELSE MUT RETURN TEST
 %token INT BOOL FLOAT32 FLOAT64 CHAR STRING
 %token EOF BOX NOT
 %token OWN COLON LT GT PTR ADDR DEREF
 %token CHOOSE WHEN OTHERWISE MODULE EXPORT IMPORT
-%token UNSAFE TRUSTED C_KEYWORD VOID
+%token UNSAFE TRUSTED C_KEYWORD 
+
+/* --- 类型声明：必须与 Ast.ml 中的定义一致 --- */
+%type <Ast.def> def
+%type <Ast.def list> list(def)
+%type <Ast.stmt> stmt
+%type <Ast.stmt list> stmt_list
+%type <Ast.expr> expr
+%type <Ast.expr option> expr_opt
+%type <Ast.expr> atomic_expr
+%type <Ast.expr> field_access_expr
+%type <Ast.expr> call_expr
+%type <Ast.expr> macro_expr
+%type <Ast.expr> struct_init_expr
+%type <Ast.typ> typ
+%type <string> type_path  (* 注意：你在 type_path 中返回 string *)
+%type <Ast.param> param
+%type <Ast.param list> separated_nonempty_list(COMMA,param)
+%type <(string * Ast.typ)> field_decl
+%type <(string * Ast.typ) list> separated_nonempty_list(COMMA,field_decl)
+%type <(string * Ast.expr)> struct_init
+%type <(string * Ast.expr) list> struct_inits
+%type <(string * Ast.expr) list> separated_nonempty_list(COMMA,struct_init)
+%type <Ast.expr list> separated_nonempty_list(COMMA,expr)
+%type <Ast.expr list> loption(separated_nonempty_list(COMMA,expr))  (* Menhir 自动生成 *)
+%type <(Ast.expr * Ast.expr) list> elif_chain
+%type <(Ast.expr * Ast.expr) list> nonempty_elif_chain
+%type <Ast.expr option> else_opt
+%type <Ast.expr option> otherwise_opt
 
 %left PLUS MINUS          /* 最低优先级，左结合 */
 %left STAR                /* 中等优先级，左结合 */
 %left EQEQ NEQ            /* 较高优先级，左结合 */
+%left DOT          /* 字段访问左结合 */
+%right AS          /* 类型转换右结合：x as T as U = x as (T as U) */
+%nonassoc ADDR DEREF /* 取地址和解引用优先级高于字段访问 */
 
 %start program
 %type <Ast.def list> program
@@ -62,7 +93,10 @@ def:
     { DCFuncUnsafe ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, name, params, None, c_code) }
   | TEST name = IDENT EQ LPAREN RPAREN COLON INT DARROW body = expr
     { DTest ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, name, body) }
-  | MODULE name = STRING_LIT { DModule ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, name) }
+  | MODULE name = separated_nonempty_list(DOT, IDENT) { 
+    DModule (
+      { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, 
+      String.concat "." name) }
   | EXPORT symbol = IDENT { SExport ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, symbol) }
   | IMPORT symbol = STRING_LIT { SImport ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, symbol) }
   | IMPORT symbol = STRING_LIT AS alias = separated_nonempty_list(DOT, IDENT) {
@@ -101,7 +135,6 @@ expr:
   | e1 = expr NEQ e2 = expr { EBinOp ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, Neq, e1, e2) }
   | LBRACE stmts = stmt_list expr_opt = expr_opt RBRACE
     { EBlock ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, stmts, expr_opt) }
-  | struct_init_expr { $1 }
   | CHOOSE LPAREN var = expr RPAREN LBRACE cases = list(when_case) otherwise = otherwise_opt RBRACE
     { EChoose ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, var, cases, otherwise) }
 
@@ -195,12 +228,12 @@ else_opt:
   | /* empty */ { None }
   | ELSE LBRACE e = stmt_list expr_opt_else = expr_opt RBRACE { Some (EBlock ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, e, expr_opt_else)) }
 
-binop:
-  | PLUS { Add }
-  | MINUS { Sub }
-  | STAR { Mul }
-  | EQEQ { Eq }
-  | NEQ { Neq }
+// binop:
+//   | PLUS { Add }
+//   | MINUS { Sub }
+//   | STAR { Mul }
+//   | EQEQ { Eq }
+//   | NEQ { Neq }
 
 typ:
   | INT { TInt }

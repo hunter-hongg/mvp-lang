@@ -78,7 +78,6 @@ rule token = parse
   | "ref"               { REF }
   | "move"              { MOVE }
   | "clone"             { CLONE }
-  | "print"             { PRINT }
   | "if"                { IF }
   | "elif"              { ELIF }
   | "else"              { ELSE }

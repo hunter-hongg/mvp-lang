@@ -1,4 +1,4 @@
-module "std.term"
+module std.term
 
 color_null = (): string => "\x1b[0;0m"
 color_black = (): string => "\x1b[0;30m"

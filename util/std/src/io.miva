@@ -1,4 +1,4 @@
-module "std.io"
+module std.io
 import "std/term"
 
 cprint = (ref x: string, ref color: string) => {

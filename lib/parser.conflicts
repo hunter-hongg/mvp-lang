@@ -1,0 +1,478 @@
+
+** Conflict (shift/reduce) in state 21.
+** Token involved: DOT
+** This state is reached from program after reading:
+
+IDENT EQ func_params DARROW atomic_expr AS type_path
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(def) EOF 
+def list(def) 
+IDENT EQ func_params DARROW expr 
+                            call_expr 
+                            field_access_expr 
+                            (?)
+
+** In state 21, looking ahead at DOT, reducing production
+** typ -> type_path
+** is permitted because of the following sub-derivation:
+
+field_access_expr DOT IDENT // lookahead token appears
+atomic_expr // lookahead token is inherited
+atomic_expr AS typ // lookahead token is inherited
+               type_path . 
+
+** In state 21, looking ahead at DOT, shifting is permitted
+** because of the following sub-derivation:
+
+atomic_expr 
+atomic_expr AS typ 
+               type_path 
+               type_path . DOT IDENT 
+
+** Conflict (shift/reduce) in state 54.
+** Tokens involved: STRUCT STRING_LIT MOVE LPAREN LBRACE INT_LIT IDENT FLOAT_LIT DEREF CLONE CHOOSE CHAR_LIT BOOL_LIT ADDR
+** The following explanations concentrate on token STRUCT.
+** This state is reached from program after reading:
+
+IDENT EQ func_params DARROW LBRACE
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(def) EOF 
+def list(def) 
+IDENT EQ func_params DARROW expr 
+                            (?)
+
+** In state 54, looking ahead at STRUCT, reducing production
+** list(stmt) ->
+** is permitted because of the following sub-derivation:
+
+LBRACE stmt_list expr_opt RBRACE // lookahead token appears because expr_opt can begin with STRUCT
+       list(stmt) // lookahead token is inherited
+       . 
+
+** In state 54, looking ahead at STRUCT, shifting is permitted
+** because of the following sub-derivation:
+
+LBRACE stmt_list expr_opt RBRACE 
+       list(stmt) 
+       stmt list(stmt) 
+       expr 
+       call_expr 
+       field_access_expr 
+       atomic_expr 
+       struct_init_expr 
+       . STRUCT type_path LBRACE struct_inits RBRACE 
+
+** Conflict (shift/reduce) in state 55.
+** Tokens involved: STRUCT STRING_LIT MOVE LPAREN LBRACE INT_LIT IDENT FLOAT_LIT DEREF CLONE CHOOSE CHAR_LIT BOOL_LIT ADDR
+** The following explanations concentrate on token STRUCT.
+** This state is reached from program after reading:
+
+IDENT EQ func_params DARROW LBRACE RETURN
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(def) EOF 
+def list(def) 
+IDENT EQ func_params DARROW expr 
+                            LBRACE stmt_list expr_opt RBRACE 
+                                   list(stmt) 
+                                   (?)
+
+** In state 55, looking ahead at STRUCT, reducing production
+** stmt -> RETURN
+** is permitted because of the following sub-derivation:
+
+stmt list(stmt) // lookahead token appears because list(stmt) can begin with STRUCT
+RETURN . 
+
+** In state 55, looking ahead at STRUCT, shifting is permitted
+** because of the following sub-derivation:
+
+stmt list(stmt) 
+RETURN expr 
+       call_expr 
+       field_access_expr 
+       atomic_expr 
+       struct_init_expr 
+       . STRUCT type_path LBRACE struct_inits RBRACE 
+
+** Conflict (shift/reduce) in state 57.
+** Token involved: LPAREN
+** This state is reached from program after reading:
+
+IDENT EQ func_params DARROW IDENT
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(def) EOF 
+def list(def) 
+IDENT EQ func_params DARROW expr 
+                            call_expr 
+                            (?)
+
+** In state 57, looking ahead at LPAREN, reducing production
+** atomic_expr -> IDENT
+** is permitted because of the following sub-derivation:
+
+field_access_expr LPAREN loption(separated_nonempty_list(COMMA,expr)) RPAREN // lookahead token appears
+atomic_expr // lookahead token is inherited
+IDENT . 
+
+** In state 57, looking ahead at LPAREN, shifting is permitted
+** because of the following sub-derivation:
+
+IDENT . LPAREN loption(separated_nonempty_list(COMMA,expr)) RPAREN 
+
+** Conflict (shift/reduce) in state 70.
+** Token involved: AS
+** This state is reached from program after reading:
+
+IDENT EQ func_params DARROW DEREF atomic_expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(def) EOF 
+def list(def) 
+IDENT EQ func_params DARROW expr 
+                            call_expr 
+                            field_access_expr 
+                            atomic_expr 
+                            (?)
+
+** In state 70, looking ahead at AS, shifting is permitted
+** because of the following sub-derivation:
+
+DEREF field_access_expr 
+      atomic_expr 
+      atomic_expr . AS typ 
+
+** In state 70, looking ahead at AS, reducing production
+** field_access_expr -> atomic_expr
+** is permitted because of the following sub-derivation:
+
+atomic_expr AS typ // lookahead token appears
+DEREF field_access_expr // lookahead token is inherited
+      atomic_expr . 
+
+** Conflict (shift/reduce) in state 77.
+** Token involved: LPAREN
+** This state is reached from program after reading:
+
+IDENT EQ func_params DARROW LBRACE field_access_expr
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(def) EOF 
+def list(def) 
+IDENT EQ func_params DARROW expr 
+                            LBRACE stmt_list expr_opt RBRACE 
+                                   list(stmt) 
+                                   (?)
+
+** In state 77, looking ahead at LPAREN, reducing production
+** call_expr -> field_access_expr
+** is permitted because of the following sub-derivation:
+
+stmt list(stmt) // lookahead token appears because list(stmt) can begin with LPAREN
+expr // lookahead token is inherited
+call_expr // lookahead token is inherited
+field_access_expr . 
+
+** In state 77, looking ahead at LPAREN, shifting is permitted
+** because of the following sub-derivation:
+
+stmt list(stmt) 
+expr 
+call_expr 
+field_access_expr . LPAREN loption(separated_nonempty_list(COMMA,expr)) RPAREN 
+
+** Conflict (shift/reduce) in state 105.
+** Tokens involved: STRUCT STRING_LIT MOVE LPAREN LBRACE INT_LIT IDENT FLOAT_LIT DEREF CLONE CHOOSE CHAR_LIT BOOL_LIT ADDR
+** The following explanations concentrate on token STRUCT.
+** This state is reached from program after reading:
+
+IDENT EQ func_params DARROW CHOOSE LPAREN expr RPAREN LBRACE WHEN LPAREN expr RPAREN LBRACE
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(def) EOF 
+def list(def) 
+IDENT EQ func_params DARROW expr 
+                            CHOOSE LPAREN expr RPAREN LBRACE list(when_case) otherwise_opt RBRACE 
+                                                             when_case list(when_case) 
+                                                             (?)
+
+** In state 105, looking ahead at STRUCT, reducing production
+** list(stmt) ->
+** is permitted because of the following sub-derivation:
+
+WHEN LPAREN expr RPAREN LBRACE stmt_list expr_opt RBRACE // lookahead token appears because expr_opt can begin with STRUCT
+                               list(stmt) // lookahead token is inherited
+                               . 
+
+** In state 105, looking ahead at STRUCT, shifting is permitted
+** because of the following sub-derivation:
+
+WHEN LPAREN expr RPAREN LBRACE stmt_list expr_opt RBRACE 
+                               list(stmt) 
+                               stmt list(stmt) 
+                               expr 
+                               call_expr 
+                               field_access_expr 
+                               atomic_expr 
+                               struct_init_expr 
+                               . STRUCT type_path LBRACE struct_inits RBRACE 
+
+** Conflict (shift/reduce) in state 114.
+** Tokens involved: STRUCT STRING_LIT MOVE LPAREN LBRACE INT_LIT IDENT FLOAT_LIT DEREF CLONE CHOOSE CHAR_LIT BOOL_LIT ADDR
+** The following explanations concentrate on token STRUCT.
+** This state is reached from program after reading:
+
+IDENT EQ func_params DARROW LBRACE IF LPAREN expr RPAREN LBRACE
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(def) EOF 
+def list(def) 
+IDENT EQ func_params DARROW expr 
+                            LBRACE stmt_list expr_opt RBRACE 
+                                   list(stmt) 
+                                   stmt list(stmt) 
+                                   (?)
+
+** In state 114, looking ahead at STRUCT, reducing production
+** list(stmt) ->
+** is permitted because of the following sub-derivation:
+
+IF LPAREN expr RPAREN LBRACE stmt_list expr_opt RBRACE elif_chain else_opt // lookahead token appears because expr_opt can begin with STRUCT
+                             list(stmt) // lookahead token is inherited
+                             . 
+
+** In state 114, looking ahead at STRUCT, shifting is permitted
+** because of the following sub-derivation:
+
+IF LPAREN expr RPAREN LBRACE stmt_list expr_opt RBRACE elif_chain else_opt 
+                             list(stmt) 
+                             stmt list(stmt) 
+                             expr 
+                             call_expr 
+                             field_access_expr 
+                             atomic_expr 
+                             struct_init_expr 
+                             . STRUCT type_path LBRACE struct_inits RBRACE 
+
+** Conflict (shift/reduce) in state 115.
+** Token involved: LPAREN
+** This state is reached from program after reading:
+
+IDENT EQ func_params DARROW LBRACE IDENT
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(def) EOF 
+def list(def) 
+IDENT EQ func_params DARROW expr 
+                            LBRACE stmt_list expr_opt RBRACE 
+                                   list(stmt) 
+                                   (?)
+
+** In state 115, looking ahead at LPAREN, reducing production
+** atomic_expr -> IDENT
+** is permitted because of the following sub-derivation:
+
+stmt list(stmt) // lookahead token appears because list(stmt) can begin with LPAREN
+expr // lookahead token is inherited
+call_expr // lookahead token is inherited
+field_access_expr // lookahead token is inherited
+atomic_expr // lookahead token is inherited
+IDENT . 
+
+** In state 115, looking ahead at LPAREN, shifting is permitted
+** because of the following sub-derivation:
+
+stmt list(stmt) 
+expr 
+call_expr 
+IDENT . LPAREN loption(separated_nonempty_list(COMMA,expr)) RPAREN 
+
+** Conflict (shift/reduce) in state 130.
+** Tokens involved: STRUCT STRING_LIT MOVE LPAREN LBRACE INT_LIT IDENT FLOAT_LIT DEREF CLONE CHOOSE CHAR_LIT BOOL_LIT ADDR
+** The following explanations concentrate on token STRUCT.
+** This state is reached from program after reading:
+
+IDENT EQ func_params DARROW LBRACE IF LPAREN expr RPAREN LBRACE stmt_list expr_opt RBRACE ELIF LPAREN expr RPAREN LBRACE
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(def) EOF 
+def list(def) 
+IDENT EQ func_params DARROW expr 
+                            LBRACE stmt_list expr_opt RBRACE 
+                                   list(stmt) 
+                                   stmt list(stmt) 
+                                   IF LPAREN expr RPAREN LBRACE stmt_list expr_opt RBRACE elif_chain else_opt 
+                                                                                          nonempty_elif_chain 
+                                                                                          (?)
+
+** In state 130, looking ahead at STRUCT, reducing production
+** list(stmt) ->
+** is permitted because of the following sub-derivation:
+
+ELIF LPAREN expr RPAREN LBRACE stmt_list expr_opt RBRACE // lookahead token appears because expr_opt can begin with STRUCT
+                               list(stmt) // lookahead token is inherited
+                               . 
+
+** In state 130, looking ahead at STRUCT, shifting is permitted
+** because of the following sub-derivation:
+
+ELIF LPAREN expr RPAREN LBRACE stmt_list expr_opt RBRACE 
+                               list(stmt) 
+                               stmt list(stmt) 
+                               expr 
+                               call_expr 
+                               field_access_expr 
+                               atomic_expr 
+                               struct_init_expr 
+                               . STRUCT type_path LBRACE struct_inits RBRACE 
+
+** Conflict (shift/reduce) in state 136.
+** Tokens involved: STRUCT STRING_LIT MOVE LPAREN LBRACE INT_LIT IDENT FLOAT_LIT DEREF CLONE CHOOSE CHAR_LIT BOOL_LIT ADDR
+** The following explanations concentrate on token STRUCT.
+** This state is reached from program after reading:
+
+IDENT EQ func_params DARROW LBRACE stmt
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(def) EOF 
+def list(def) 
+IDENT EQ func_params DARROW expr 
+                            (?)
+
+** In state 136, looking ahead at STRUCT, reducing production
+** list(stmt) ->
+** is permitted because of the following sub-derivation:
+
+LBRACE stmt_list expr_opt RBRACE // lookahead token appears because expr_opt can begin with STRUCT
+       list(stmt) // lookahead token is inherited
+       stmt list(stmt) // lookahead token is inherited
+            . 
+
+** In state 136, looking ahead at STRUCT, shifting is permitted
+** because of the following sub-derivation:
+
+LBRACE stmt_list expr_opt RBRACE 
+       list(stmt) 
+       stmt list(stmt) 
+            stmt list(stmt) 
+            expr 
+            call_expr 
+            field_access_expr 
+            atomic_expr 
+            struct_init_expr 
+            . STRUCT type_path LBRACE struct_inits RBRACE 
+
+** Conflict (shift/reduce) in state 143.
+** Tokens involved: STRUCT STRING_LIT MOVE LPAREN LBRACE INT_LIT IDENT FLOAT_LIT DEREF CLONE CHOOSE CHAR_LIT BOOL_LIT ADDR
+** The following explanations concentrate on token STRUCT.
+** This state is reached from program after reading:
+
+IDENT EQ func_params DARROW LBRACE IF LPAREN expr RPAREN LBRACE stmt_list expr_opt RBRACE elif_chain ELSE LBRACE
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(def) EOF 
+def list(def) 
+IDENT EQ func_params DARROW expr 
+                            LBRACE stmt_list expr_opt RBRACE 
+                                   list(stmt) 
+                                   stmt list(stmt) 
+                                   IF LPAREN expr RPAREN LBRACE stmt_list expr_opt RBRACE elif_chain else_opt 
+                                                                                                     (?)
+
+** In state 143, looking ahead at STRUCT, reducing production
+** list(stmt) ->
+** is permitted because of the following sub-derivation:
+
+ELSE LBRACE stmt_list expr_opt RBRACE // lookahead token appears because expr_opt can begin with STRUCT
+            list(stmt) // lookahead token is inherited
+            . 
+
+** In state 143, looking ahead at STRUCT, shifting is permitted
+** because of the following sub-derivation:
+
+ELSE LBRACE stmt_list expr_opt RBRACE 
+            list(stmt) 
+            stmt list(stmt) 
+            expr 
+            call_expr 
+            field_access_expr 
+            atomic_expr 
+            struct_init_expr 
+            . STRUCT type_path LBRACE struct_inits RBRACE 
+
+** Conflict (shift/reduce) in state 155.
+** Tokens involved: STRUCT STRING_LIT MOVE LPAREN LBRACE INT_LIT IDENT FLOAT_LIT DEREF CLONE CHOOSE CHAR_LIT BOOL_LIT ADDR
+** The following explanations concentrate on token STRUCT.
+** This state is reached from program after reading:
+
+IDENT EQ func_params DARROW CHOOSE LPAREN expr RPAREN LBRACE list(when_case) OTHERWISE LBRACE
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(def) EOF 
+def list(def) 
+IDENT EQ func_params DARROW expr 
+                            CHOOSE LPAREN expr RPAREN LBRACE list(when_case) otherwise_opt RBRACE 
+                                                                             (?)
+
+** In state 155, looking ahead at STRUCT, reducing production
+** list(stmt) ->
+** is permitted because of the following sub-derivation:
+
+OTHERWISE LBRACE stmt_list expr_opt RBRACE // lookahead token appears because expr_opt can begin with STRUCT
+                 list(stmt) // lookahead token is inherited
+                 . 
+
+** In state 155, looking ahead at STRUCT, shifting is permitted
+** because of the following sub-derivation:
+
+OTHERWISE LBRACE stmt_list expr_opt RBRACE 
+                 list(stmt) 
+                 stmt list(stmt) 
+                 expr 
+                 call_expr 
+                 field_access_expr 
+                 atomic_expr 
+                 struct_init_expr 
+                 . STRUCT type_path LBRACE struct_inits RBRACE 
