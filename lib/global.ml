@@ -18,4 +18,5 @@ let builtin_functions = [
   "string_from" ;
   "box_new" ;
   "box_deref" ;
+  "range" ;
 ]

@@ -152,6 +152,11 @@ and cxx_expr_of_expr indent_level ctx expr =
       let body_str = cxx_expr_of_expr (indent_level + 1) ctx body in
       "for (;;) { " ^ body_str ^ " }"
   )
+  | EFor (_, i, range, body) -> (
+      let range_str = cxx_expr_of_expr indent_level ctx range in
+      let body_str = cxx_expr_of_expr (indent_level + 1) ctx body in
+      "for (auto " ^ i ^ " : " ^ range_str ^ ") { " ^ body_str ^ " }"
+  )
   | ECall (_, name, args) -> 
       let args_str = List.map (cxx_expr_of_expr indent_level ctx) args in
       let call_name = match name with
@@ -173,6 +178,7 @@ and cxx_expr_of_expr indent_level ctx expr =
         | "string_from" -> "mvp_to_string"
         | "box_new" -> "mvp_box_new"
         | "box_deref" -> "mvp_box_deref"
+        | "range" -> "mvp_range"
         | _ -> 
             (* 将a.b.c.foo转换为a::b::c::foo *)
             let lst = (String.split_on_char '.' name) in

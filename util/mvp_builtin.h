@@ -200,4 +200,24 @@ inline mvp_builtin_string mvp_string_make(mvp_builtin_string const &init, int si
   return res;
 }
 
+inline std::vector<mvp_builtin_int> mvp_range(mvp_builtin_int start, mvp_builtin_int end) {
+  std::vector<mvp_builtin_int> res;
+  for (mvp_builtin_int i = start; i < end; ++i) {
+    res.push_back(i);
+  }
+  return res;
+}
+
+inline std::vector<mvp_builtin_int> mvp_range(mvp_builtin_int end) {
+  return mvp_range(0, end);
+}
+
+inline std::vector<mvp_builtin_int> mvp_range(mvp_builtin_int start, mvp_builtin_int end, mvp_builtin_int step) {
+  std::vector<mvp_builtin_int> res;
+  for (mvp_builtin_int i = start; i < end; i += step) {
+    res.push_back(i);
+  }
+  return res;
+}
+
 #endif // MVP_BUILTIN_H

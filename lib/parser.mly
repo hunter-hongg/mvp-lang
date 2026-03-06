@@ -20,7 +20,7 @@
 %token PLUS MINUS STAR EQEQ NEQ AS
 %token STRUCT REF MOVE CLONE IF ELIF ELSE MUT RETURN TEST
 %token INT BOOL FLOAT32 FLOAT64 CHAR STRING
-%token EOF BOX NOT WHILE LOOP
+%token EOF BOX NOT WHILE LOOP FOR IN
 %token OWN COLON LT GT PTR ADDR DEREF
 %token CHOOSE WHEN OTHERWISE MODULE EXPORT IMPORT
 %token UNSAFE TRUSTED C_KEYWORD 
@@ -203,6 +203,10 @@ stmt:
   | LOOP LBRACE t = stmt_list expr_opt = expr_opt RBRACE {
     let loc = { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }
     in SExpr (loc, ELoop (loc, EBlock (loc, t, expr_opt)))
+  }
+  | FOR i = IDENT IN LPAREN range = expr RPAREN LBRACE t = stmt_list expr_opt = expr_opt RBRACE {
+    let loc = { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }
+    in SExpr (loc, EFor (loc, i, range, EBlock (loc, t, expr_opt)))
   }
   | expr { SExpr ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, $1) }
 

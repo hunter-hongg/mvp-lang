@@ -40,6 +40,7 @@ type expr =
   | EDeref of loc * expr
   | EWhile of loc * expr * expr 
   | ELoop of loc * expr
+  | EFor of loc * string * expr * expr
 
 and binop =
   | Add | Sub | Mul | Eq | Neq
