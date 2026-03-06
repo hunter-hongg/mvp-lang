@@ -103,6 +103,8 @@ rule token = parse
   | "box"               { BOX }
   | "addr"              { ADDR }
   | "deref"             { DEREF }
+  | "while"             { WHILE }
+  | "loop"              { LOOP }
   | digits as num       { INT_LIT (Int64.of_string num) }
   | digits '.' digits? as f
                         { FLOAT_LIT (float_of_string f) }

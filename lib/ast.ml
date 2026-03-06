@@ -38,6 +38,8 @@ type expr =
   | EVoid of loc 
   | EAddr of loc * expr
   | EDeref of loc * expr
+  | EWhile of loc * expr * expr 
+  | ELoop of loc * expr
 
 and binop =
   | Add | Sub | Mul | Eq | Neq

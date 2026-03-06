@@ -20,7 +20,7 @@
 %token PLUS MINUS STAR EQEQ NEQ AS
 %token STRUCT REF MOVE CLONE IF ELIF ELSE MUT RETURN TEST
 %token INT BOOL FLOAT32 FLOAT64 CHAR STRING
-%token EOF BOX NOT
+%token EOF BOX NOT WHILE LOOP
 %token OWN COLON LT GT PTR ADDR DEREF
 %token CHOOSE WHEN OTHERWISE MODULE EXPORT IMPORT
 %token UNSAFE TRUSTED C_KEYWORD 
@@ -193,7 +193,17 @@ stmt:
   | IDENT EQ expr { SAssign ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, $1, $3) }  (* 赋值语句：x = 值 *)
   | RETURN expr { SReturn ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, $2) }
   | RETURN { let loc = { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 } in SReturn (loc, EVoid loc) }
-  | IF LPAREN cond = expr RPAREN LBRACE t = stmt_list expr_opt = expr_opt RBRACE elifs = elif_chain else_opt = else_opt { let loc = { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 } in SExpr (loc, build_if_chain loc cond (EBlock (loc, t, expr_opt)) elifs else_opt) }
+  | IF LPAREN cond = expr RPAREN LBRACE t = stmt_list expr_opt = expr_opt RBRACE elifs = elif_chain else_opt = else_opt { 
+      let loc = { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }
+       in SExpr (loc, build_if_chain loc cond (EBlock (loc, t, expr_opt)) elifs else_opt) }
+  | WHILE LPAREN cond = expr RPAREN LBRACE t = stmt_list expr_opt = expr_opt RBRACE {
+    let loc = { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }
+    in SExpr (loc, EWhile (loc, cond, EBlock (loc, t, expr_opt)))
+  }
+  | LOOP LBRACE t = stmt_list expr_opt = expr_opt RBRACE {
+    let loc = { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }
+    in SExpr (loc, ELoop (loc, EBlock (loc, t, expr_opt)))
+  }
   | expr { SExpr ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, $1) }
 
 struct_init_expr:

@@ -95,7 +95,7 @@ let rec cxx_stmt_of_stmt indent_level ctx stmt =
         | ECall (_, _, _) -> ""
         | EMacro (_, _, _) -> ""
         | _ -> 
-        ind ^ "static_assert(is_copyable<decltype(" ^ name 
+        ind ^ "static_assert(is_copyable_v<decltype(" ^ name 
         ^ ")>, \"A non-Copy type can't be assigned without clone or move\");\n"
       )
 and cxx_expr_of_expr indent_level ctx expr = 
@@ -143,6 +143,15 @@ and cxx_expr_of_expr indent_level ctx expr =
         | None -> ""
       in
       "if (" ^ cond_str ^ ") { " ^ then_str ^ " }" ^ else_str
+  | EWhile (_, cond, body) -> (
+      let cond_str = cxx_expr_of_expr indent_level ctx cond in
+      let body_str = cxx_expr_of_expr (indent_level + 1) ctx body in
+      "while (" ^ cond_str ^ ") { " ^ body_str ^ " }"
+  )
+  | ELoop (_, body) -> (
+      let body_str = cxx_expr_of_expr (indent_level + 1) ctx body in
+      "for (;;) { " ^ body_str ^ " }"
+  )
   | ECall (_, name, args) -> 
       let args_str = List.map (cxx_expr_of_expr indent_level ctx) args in
       let call_name = match name with
