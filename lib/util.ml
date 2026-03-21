@@ -36,3 +36,21 @@ let process_escapes s =
       (Buffer.add_char buffer s.[i]; loop (i+1))
   in
   loop 0
+
+let is_uppercase c = 
+  if Char.code c >= Char.code 'A' && Char.code c <= Char.code 'Z' then
+    true
+  else
+    false
+
+let is_lowercase c = 
+  if Char.code c >= Char.code 'a' && Char.code c <= Char.code 'z' then
+    true
+  else
+    false
+
+let is_lowercase_or_dot c = 
+  if (is_lowercase c) || c = '.' then
+    true
+  else
+    false

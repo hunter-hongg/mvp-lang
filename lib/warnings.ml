@@ -48,17 +48,43 @@ let get_warnings defs =
     | _ -> ()
   and check_stmt stmt = 
     match stmt with
-    | SLet (_, _, _, e) -> check_expr e
+    | SLet (loc, _, name, e) -> (
+      check_snake loc name "var";
+      check_expr e;
+    )
     | SAssign (_, _, e) -> check_expr e
     | SReturn (_, e) -> check_expr e
     | SExpr (_, e) -> check_expr e
+  and check_snake loc name typ = 
+    let has_err = ref false in
+    String.iter (fun c -> (
+      if (Util.is_uppercase c) && (not !has_err) then (
+        has_err := true;
+        let warning_msg = Printf.sprintf "Warning:%d:%d:%s%s name '%s'%s" 
+          loc.line loc.col "The " typ name " isn't a snake_case name." in
+        warnings := warning_msg :: !warnings
+    ))) name
+  and check_all_lower loc name typ = 
+    let has_err = ref false in
+    String.iter (fun c -> (
+      if (not (Util.is_lowercase_or_dot c)) && (not !has_err) then (
+        has_err := true;
+        let warning_msg = Printf.sprintf "Warning:%d:%d:%s%s name '%s'%s" 
+          loc.line loc.col "The " typ name " isn't a lowercase name." in
+        warnings := warning_msg :: !warnings
+      )
+    )) name
   in
   List.iter (function def ->
     match def with
-    | DFunc (_, _, _, _, expr)
-    | DFuncTrusted (_, _, _, _, expr)
-    | DFuncUnsafe (_, _, _, _, expr)
-     -> check_expr expr
+    | DFunc (loc, name, _, _, expr)
+    | DFuncTrusted (loc, name, _, _, expr)
+    | DFuncUnsafe (loc, name, _, _, expr)
+     -> (
+      check_snake loc name "function";
+      check_expr expr
+    )
+    | DModule (loc, name) -> check_all_lower loc name "module"
     | _ -> ()
   ) defs;
   !warnings
