@@ -1,3 +1,5 @@
+open Ast
+
 let process_escapes s = 
   let len = String.length s in
   let buffer = Buffer.create len in
@@ -36,6 +38,12 @@ let process_escapes s =
       (Buffer.add_char buffer s.[i]; loop (i+1))
   in
   loop 0
+
+let rec build_if_chain loc cond then_branch elifs else_opt =
+  match elifs with
+  | [] -> EIf (loc, cond, then_branch, else_opt)
+  | (elif_cond, elif_branch) :: rest ->
+      EIf (loc, cond, then_branch, Some (build_if_chain loc elif_cond elif_branch rest else_opt))
 
 let is_uppercase c = 
   if Char.code c >= Char.code 'A' && Char.code c <= Char.code 'Z' then
