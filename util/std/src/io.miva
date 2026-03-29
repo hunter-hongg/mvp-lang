@@ -2,7 +2,7 @@ module std.io
 import "std/term"
 
 cprint = (ref x: string, ref color: string) => {
-  prints(color, x, std.term.color_null())
+  prints!(color, x, std.term.color_null())
 }
 
 cprintln = (ref x: string, ref color: string) => {

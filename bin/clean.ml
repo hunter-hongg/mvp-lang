@@ -1,6 +1,7 @@
 open Util
 open Color
 open Printf
+module Env = Mvp_lib.Env
 open Env
 
 let clean_cmd_do () =

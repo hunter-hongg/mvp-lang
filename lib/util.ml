@@ -62,3 +62,8 @@ let is_lowercase_or_dot c =
     true
   else
     false
+
+let format_loc loc = 
+  let line = loc.line in 
+  let col = loc.col in
+  Printf.sprintf "%d:%d" line col

@@ -3,7 +3,6 @@
 [@@@ocaml.warning "-26"]
 open Printf
 open Cmdliner
-open Env
 open Util
 
 module StringSet = Set.Make(String)
@@ -17,9 +16,8 @@ module Codegen = Mvp_lib.Codegen
 module Global = Mvp_lib.Global
 module Macro_expand = Mvp_lib.Macro_expand
 module Warning = Mvp_lib.Warnings
-
-
-
+module Env = Mvp_lib.Env
+open Env
 
 (* ---------- 全局选项 ---------- *)
 let verbose =
@@ -31,27 +29,8 @@ let release =
   Arg.(value & flag & info ["r"; "release"] ~doc)
 
 (* ---------- 公共解析函数 ---------- *)
-let parse_input_file filename =  
-  let ic = open_in filename in
-  let lexbuf = Lexing.from_channel ic in
-  Lexing.set_filename lexbuf filename;
-  try
-    let ast = Parser.program Lexer.token lexbuf in
-    close_in ic;
-    ast
-  with
-  | Parsing.Parse_error ->
-      let pos = Lexing.lexeme_start_p lexbuf in
-      let line = pos.Lexing.pos_lnum in
-      let col = pos.Lexing.pos_cnum - pos.Lexing.pos_bol + 1 in
-      eprintf "Syntax error at %s:%d:%d\n%!" filename line col;
-      exit 1
-  | Lexer.SyntaxError msg ->
-      eprintf "Lexer error: %s\n%!" msg;
-      exit 1
-  | _ ->
-      eprintf "Parsing error\n%!";
-      exit 1
+let parse_input_file =  
+  Mvp_lib.Wrapper.parse_input_file
 
 (* 去除重复的import语句 *)
 let remove_duplicate_imports defs = 
@@ -83,9 +62,6 @@ let remove_duplicate_imports defs =
   
   List.rev !filtered_defs
 
-let check_semantics ast =
-  Semantic.check_program ast
-
 let check_symbol_table ast =
   try SymbolTable.check_symbols ast
   with Failure msg ->
@@ -107,10 +83,6 @@ let generate_cpp_code inp ast =
 
 (* ---------- 构建目录管理 ---------- *)
 
-let ensure_dir_for_file file_path =
-  let dir = Filename.dirname file_path in
-  if not (Sys.file_exists dir) then
-    ignore (Sys.command (sprintf "mkdir -p %s" dir))
 
 let compile_cpp ~verbose ~_input_file ~output_file ~project_type ~release =
   let build_dir = get_build_dir () in
@@ -193,14 +165,23 @@ let link_file ~verbose ~obj_files ~output_file ~project_type ~release =
   if verbose then eprintf "Linked successfully: %s\n%!" exe_file;
   exe_file
 
+let check_semantics_safe ast =
+  let errs = Semantic.check_program ast in 
+  let err_flag = ref false in
+  List.iter (fun err -> (
+    eprintf "\nError:%s%!" err;
+    err_flag := true;
+  )) errs;
+  !err_flag
+
 (* ---------- 公共编译流程函数 ---------- *)
 let compile_program_obj ~verbose ~input_file ~output_file ~_release =  
   let ast = parse_input_file input_file in
   let ast = Macro_expand.expand_macros ast in
   let ast = remove_duplicate_imports ast in
   let symbol_table = SymbolTable.build_symbol_table ast in
-  check_semantics ast;
   check_symbol_table ast;
+  let err_flag = check_semantics_safe ast in
   if verbose then eprintf "Checking circular dependencies...\n%!";
   check_circular_dependencies (input_file :: symbol_table.files);
   let warnings = Warning.get_warnings ast in
@@ -249,7 +230,7 @@ let compile_program_obj ~verbose ~input_file ~output_file ~_release =
     close_out oc_header;
     if verbose then eprintf "Generated header file: %s\n%!" header_file;
   );
-  cpp_file
+  cpp_file, err_flag
 
 
 let compile_program ~verbose ~input_file ~output_file ~project_type ~release =  
@@ -300,7 +281,7 @@ let compile_program ~verbose ~input_file ~output_file ~project_type ~release =
           write_file md5_file md5sum;
           eprintf "\n\x1b[34mCompiling \x1b[0m%s to cpp file ...\x1b[0m%!" snw;
           try 
-            let objqn = if String.starts_with ~prefix:stdp s then (
+            let objqn, err_flag = if String.starts_with ~prefix:stdp s then (
               compile_program_obj ~verbose ~input_file:s ~output_file:(
                 Filename.remove_extension (remove_prefix stdp s)
               ) ~_release:release
@@ -308,6 +289,11 @@ let compile_program ~verbose ~input_file ~output_file ~project_type ~release =
               compile_program_obj ~verbose ~input_file:s 
                 ~output_file:(Filename.remove_extension s) ~_release:release
             ) in
+            if err_flag then (
+              Sys.remove md5_file;
+              eprintf "\n";
+              exit 1;
+            );
           let addfiles = (s :: (StringSet.to_list (Dependency_graph.get_all_dependents graph s))) in
             List.iter ( fun t -> (
               let t = if String.starts_with ~prefix:stdp t then (

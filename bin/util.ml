@@ -31,6 +31,11 @@ let read_file filename =
   close_in channel;
   content
 
+let ensure_dir_for_file file_path =
+  let dir = Filename.dirname file_path in
+  if not (Sys.file_exists dir) then
+    ignore (Sys.command (sprintf "mkdir -p %s" dir))
+
 (* ------------------------------------------------------- *)
 
 let remove_prefix (a : string) (b : string) : string =
