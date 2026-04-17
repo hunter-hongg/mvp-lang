@@ -58,6 +58,7 @@ let rec cxx_stmt_of_stmt indent_level ctx stmt =
         ind ^ "static_assert(is_copyable_v<decltype(" ^ name 
         ^ ")>, \"A non-Copy type can't be assigned without clone or move\");\n"
       )
+  | SCIntro (_, _) -> ""
 and cxx_expr_of_expr indent_level ctx expr = 
   match expr with
   | EInt (_, i) -> "static_cast<mvp_builtin_int>(" ^ Int64.to_string i ^ ")"
@@ -298,7 +299,6 @@ let cxx_def_of_def indent_level ctx def =
       in
       body_str
   | DFuncTrusted (_, name, params, ret_typ_opt, body) -> 
-      (* trusted函数生成与unsafe函数相同，语义检查阶段跳过 *)
       let param_strs = List.map (fun param -> 
           match param with
           | PRef (pname, ptyp) -> 
@@ -421,6 +421,8 @@ let cxx_def_of_def indent_level ctx def =
   | SImportAs (_, import, alias) -> Wrapper.toml_get_codegen_importas import alias
   | SImportHere (_, import) -> Wrapper.toml_get_codegen_importhere import
   | DTest(_, _, _) -> ""
+  | DCMagical (_, _) -> ""
+  | DCIntro (_, _) -> ""
 
 
 let cxx_func_declaration func_name params ret_typ_opt =
@@ -439,7 +441,9 @@ let cxx_func_declaration func_name params ret_typ_opt =
 let generate_test indent_level defs ctx = 
     let ind = indent indent_level in
     let ind_inner = indent (indent_level + 1) in
-    let header = "#include <mvp_builtin.h>\n" in
+    let modname = (Symbol_table.build_symbol_table defs).module_name in
+    let modname_cxx = cxx_deal_module modname in
+    let header = "#include <mvp_builtin.h>\nusing namespace " ^ modname_cxx ^ ";\n" in
     let body = ref "" in 
     let found = ref false in
     List.iter (fun def ->

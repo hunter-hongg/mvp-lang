@@ -128,6 +128,7 @@ let expand_macros defs =
     | SAssign (loc, name, e) -> SAssign (loc, name, expand_expr e)
     | SReturn (loc, e) -> SReturn (loc, expand_expr e)
     | SExpr (loc, e) -> SExpr (loc, expand_expr e)
+    | SCIntro (loc, intro) -> SCIntro (loc, intro)
   and expand_def = function
     | DFunc (loc, name, params, ret_typ, body) -> 
         DFunc (loc, name, params, ret_typ, expand_expr body)
@@ -136,7 +137,7 @@ let expand_macros defs =
     | DFuncTrusted (loc, name, params, ret_typ, body) -> 
         DFuncTrusted (loc, name, params, ret_typ, expand_expr body)
     | DTest (loc, name, body) -> DTest (loc, name, expand_expr body)
-    | d -> d  (* 其他所有定义类型直接返回 *)
+    | d -> d  
   in
   let res = List.map expand_def defs in 
   match res with

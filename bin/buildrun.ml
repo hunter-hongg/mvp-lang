@@ -4,6 +4,7 @@ open Printf
 open Mvp_lib.Wrapper
 open Mvp_lib.Env
 open Mvp_lib.Tomler
+open Mvp_lib.Magical
 open Util
 
 module Semantic = Mvp_lib.Semantic
@@ -12,10 +13,11 @@ module SymbolTable = Mvp_lib.Symbol_table
 module Warning = Mvp_lib.Warnings
 module Codegen = Mvp_lib.Codegen
 module Dependency_graph = Mvp_lib.Dependency_graph
+module Magical = Mvp_lib.Magical
 
 let compile_program ~verbose ~input_file ~output_file ~project_type ~release =  
   eprintf "\n\x1b[34mChecking \x1b[0m%s%!" input_file;
-  let _, e = compile_program_obj ~input_file ~output_file:"/tmp/mivc.tmp" ~_release:release ~with_warn:false in
+  let _, e, _ = compile_program_obj ~input_file ~output_file:"/tmp/mivc.tmp" ~_release:release ~with_warn:false in
   if e then (
     eprintf "\n";
     exit 1;
@@ -60,14 +62,14 @@ let compile_program ~verbose ~input_file ~output_file ~project_type ~release =
         let old_sum = if (Sys.file_exists md5_file) then ( 
           read_file md5_file
         ) else "" in
-        let objq = if old_sum = md5sum then (
-          cache_dir ^ "/" ^ unique_base ^ ".cpp"
+        let objq, flags = if old_sum = md5sum then (
+          cache_dir ^ "/" ^ unique_base ^ ".cpp", Mvp_lib.Magical.magical_flag_default
         )
         else (
           write_file md5_file md5sum;
           eprintf "\n\x1b[34mCompiling \x1b[0m%s to cpp file ...\x1b[0m%!" snw;
           try 
-            let objqn, err_flag = if String.starts_with ~prefix:stdp s then (
+            let objqn, err_flag, flags = if String.starts_with ~prefix:stdp s then (
               compile_program_obj ~input_file:s ~output_file:(
                 Filename.remove_extension (remove_prefix stdp s)
               ) ~_release:release ~with_warn:true
@@ -80,7 +82,7 @@ let compile_program ~verbose ~input_file ~output_file ~project_type ~release =
               eprintf "\n";
               exit 1;
             );
-          let addfiles = (s :: (StringSet.to_list (Dependency_graph.get_all_dependents graph s))) in
+            let addfiles = (s :: (StringSet.to_list (Dependency_graph.get_all_dependents graph s))) in
             List.iter ( fun t -> (
               let t = if String.starts_with ~prefix:stdp t then (
                 (get_cache_dir_rel release) ^ "/" 
@@ -93,7 +95,7 @@ let compile_program ~verbose ~input_file ~output_file ~project_type ~release =
                 need_compile_bin := t :: !need_compile_bin
               )
             )) addfiles;
-            objqn
+            objqn, flags
           with Failure msg -> (
             eprintf "\n\x1b[31mError \x1b[0m%s%!" msg;
             Sys.remove md5_file;
@@ -114,11 +116,11 @@ let compile_program ~verbose ~input_file ~output_file ~project_type ~release =
               ) in
               process_files rest new_queue hist
         in
-        let new_queue, new_hist= process_files symt.files rest2 new_hist in
-        process_queue new_queue new_hist (objq :: obj_paths)
+        let new_queue, new_hist = process_files symt.files rest2 new_hist in
+        process_queue new_queue new_hist ((objq, flags) :: obj_paths)
   in
   let obj_paths = process_queue queue hist [] in
-  let obj_paths_real = List.map (fun s -> (
+  let obj_paths_real = List.map (fun (s, flags) -> (
     if not (List.mem s !need_compile_bin) then (
       let newp = (Filename.remove_extension s) ^ ".o" in
       newp
@@ -126,8 +128,15 @@ let compile_program ~verbose ~input_file ~output_file ~project_type ~release =
       let snw = String.concat "/" (List.filter (fun s -> s <> "") (String.split_on_char '/' s)) in
       let snw = remove_prefix ((get_cache_dir_rel release) ^ "/") snw in
       Printf.eprintf "\n\x1b[34mCompiling \x1b[0m%s to bin...\x1b[0m%!" snw;
+      let releasen, releaseb = match flags.release_mode with 
+      | Never -> false, false
+      | Always -> true, false
+      | Auto -> release, false
+      | Best -> release, true
+      | AlwaysBest -> true, true in
       try 
-        compile_cpp ~verbose ~_input_file:s ~output_file:(Filename.basename s) ~project_type ~release
+        compile_cpp ~verbose ~_input_file:s ~output_file:(Filename.basename s) ~project_type
+         ~release:releasen ~releaseb
       with Failure msg -> (
         let md5_file = (Filename.remove_extension s) ^ ".md5sum" in
         eprintf "\n\x1b[31mError: %s\x1b[0m%!" msg;
@@ -136,7 +145,7 @@ let compile_program ~verbose ~input_file ~output_file ~project_type ~release =
       )
     )
   )) obj_paths in
-  let exe_path = link_file ~obj_files:obj_paths_real ~output_file ~project_type in
+  let exe_path = link_file ~obj_files:obj_paths_real ~output_file ~project_type ~release in
   exe_path
 
 let parse_fail () = (

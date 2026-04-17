@@ -8,7 +8,7 @@
 %token <char> CHAR_LIT
 %token <string> STRING_LIT
 %token <bool> BOOL_LIT
-%token <string> IDENT
+%token <string> IDENT INTRO MAGICAL
 
 %token EQ COLONEQ DARROW LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET 
 %token COMMA DOT COLON 
@@ -106,6 +106,12 @@ def:
         col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, 
         symbol)
   }
+  | i = INTRO { DCIntro (
+    { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }
+  , i) }
+  | m = MAGICAL { DCMagical ( 
+    { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }
+  , m) }
 
 func_params:
   | LPAREN RPAREN { [] }
@@ -215,6 +221,9 @@ stmt:
     let loc = { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }
     in SExpr (loc, EFor (loc, i, range, EBlock (loc, t, expr_opt)))
   }
+  | INTRO { SCIntro ( 
+    { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }
+  , $1) }
   | expr { SExpr ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, $1) }
 
 stmt_list:

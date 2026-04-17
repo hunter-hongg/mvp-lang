@@ -56,6 +56,7 @@ and stmt =
   | SAssign of loc * string * expr      (* 赋值语句：变量名 = 表达式 *)
   | SReturn of loc * expr
   | SExpr of loc * expr
+  | SCIntro of loc * string
 
 and def =
   | DStruct of loc * string * (string * typ) list
@@ -69,3 +70,5 @@ and def =
   | SImport of loc * string
   | SImportAs of loc * string * string
   | SImportHere of loc * string
+  | DCMagical of loc * string
+  | DCIntro of loc * string

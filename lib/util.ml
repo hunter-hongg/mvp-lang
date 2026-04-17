@@ -74,7 +74,7 @@ let check_snake loc name typ =
   String.iter (fun c -> (
     if (is_uppercase c) && (not !has_err) then (
       has_err := true;
-      let warning_msg = Printf.sprintf "Warning:%d:%d:%s%s name '%s'%s" 
+      let warning_msg = Printf.sprintf "[W0001] %d:%d:%s%s name '%s'%s" 
         loc.line loc.col "The " typ name " isn't a snake_case name." in
       err := warning_msg
   ))) name;
@@ -89,7 +89,7 @@ let check_all_lower loc name typ =
   String.iter (fun c -> (
     if (not (is_lowercase_or_dot c)) && (not !has_err) then (
       has_err := true;
-      let warning_msg = Printf.sprintf "Warning:%d:%d:%s%s name '%s'%s" 
+      let warning_msg = Printf.sprintf "[W0001] %d:%d:%s%s name '%s'%s" 
         loc.line loc.col "The " typ name " isn't a lowercase name." in
       err := warning_msg
     )

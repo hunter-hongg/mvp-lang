@@ -40,50 +40,53 @@ let empty_symbol_table = {
 
 let get_head = Util.string_get_head
 
-let check_function_duplicate name params _return_typ symbol_table =
+let err er loc msg code = 
+  er := !er @ ["[" ^ code ^ "] " ^ format_loc loc ^ ":" ^ msg]
+
+let check_function_duplicate name params _return_typ symbol_table loc =
   let errs = ref [] in
   let existing_funcs = List.filter (fun (n, _, _, _) -> n = name) symbol_table.functions in
   if List.length existing_funcs > 0 then
-    errs := ("Error:function '" ^ name ^ "' is already defined") :: !errs
+    err errs loc ("function '" ^ name ^ "' is already defined") "E0004"
   else
     ();
   !errs
 
-let check_struct_duplicate name symbol_table =
+let check_struct_duplicate name symbol_table loc =
   let errs = ref [] in
   let existing_structs = List.filter (fun (n, _) -> n = name) symbol_table.structs in
   if List.length existing_structs > 0 then
-    errs := ("Error:struct '" ^ name ^ "' is already defined") :: !errs
+    err errs loc ("struct " ^ name ^ " is already defined") "E0004"
   else
     ();
   !errs
 
-let add_function name params return_typ safety symbol_table =
-  let errs = check_function_duplicate name params return_typ symbol_table in
+let add_function name params return_typ safety symbol_table loc =
+  let errs = check_function_duplicate name params return_typ symbol_table loc in
   { symbol_table with 
     functions = (name, params, return_typ, safety) :: symbol_table.functions 
   }, errs
 
-let add_struct name fields symbol_table =
-  let errs = check_struct_duplicate name symbol_table in
+let add_struct name fields symbol_table loc =
+  let errs = check_struct_duplicate name symbol_table loc in
   { symbol_table with 
     structs = (name, fields) :: symbol_table.structs 
   }, errs
 
 let process_definition def symbol_table =
   match def with
-  | DStruct (_, name, fields) ->
-      add_struct name fields symbol_table
-  | DFunc (_, name, params, return_typ, _) ->
-      add_function name params return_typ Safe symbol_table
-  | DFuncUnsafe (_, name, params, return_typ, _) ->
-      add_function name params return_typ Unsafe symbol_table
-  | DFuncTrusted (_, name, params, return_typ, _) ->
-      add_function name params return_typ Trusted symbol_table
+  | DStruct (loc, name, fields) ->
+      add_struct name fields symbol_table loc
+  | DFunc (loc, name, params, return_typ, _) ->
+      add_function name params return_typ Safe symbol_table loc
+  | DFuncUnsafe (loc, name, params, return_typ, _) ->
+      add_function name params return_typ Unsafe symbol_table loc 
+  | DFuncTrusted (loc, name, params, return_typ, _) ->
+      add_function name params return_typ Trusted symbol_table loc
   | DTest (_, _, _) ->
       symbol_table, []
-  | DCFuncUnsafe (_, name, params, return_typ, _) ->
-      add_function name params return_typ Unsafe symbol_table
+  | DCFuncUnsafe (loc, name, params, return_typ, _) ->
+      add_function name params return_typ Unsafe symbol_table loc
   | DModule (_, name) -> (
     { symbol_table with module_name = name }, []
   )
@@ -146,7 +149,10 @@ let check_circular_dependencies file_paths =
     if List.mem file stack then
       (match find_index file stack with
       | Some cycle_start ->
-          errs := "Error:circular dependency detected" :: !errs
+          err errs {
+            line = 0;
+            col = 0;
+          } ("circular dependency detected") "E0012"
       | None -> ()
       )
     else if List.mem file visited then
@@ -178,8 +184,7 @@ let get_function_safety name symbol_table =
   let funcs = List.filter (fun (n, _, _, _) -> n = name) symbol_table.functions in
   match funcs with
   | [(_, _, _, safety)] -> Some safety
-  | [] -> None
-  | _ -> failwith ("multiple definitions of function: " ^ name)
+  | _ -> None
 
 let build_dependency_graph filename symbol_table =
   let graph = Dependency_graph.create () in

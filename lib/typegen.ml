@@ -239,7 +239,7 @@ let rec type_of_expr sym env = function
 
 let fail_if errs loc cond msg = 
   if cond then 
-    errs := !errs @ [Util.format_loc loc ^ ":" ^ msg]
+    errs := !errs @ ["[E0003] " ^ Util.format_loc loc ^ ":" ^ msg]
 
 let rec make_sure_expr sym env expr = 
   let errs = ref [] in
@@ -404,6 +404,7 @@ and make_sure_block sym env expr =
         let er, _ = make_sure_block sym !env e in
         errs := !errs @ er;
       )
+      | SCIntro (_, _) -> ()
     )) sl;
     match e with 
     | Some e -> (

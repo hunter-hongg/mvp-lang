@@ -15,6 +15,8 @@ rule token = parse
 
   | "/*"                { comment lexbuf; token lexbuf }
   | "//" [^'\n']* '\n'? { Lexing.new_line lexbuf; token lexbuf }
+  | "/!" ([^'\n']* as c){ MAGICAL c }
+  | "@" ([^'\n']* as c) { INTRO c }
 
   | '='                 { EQ }
   | ":="                { COLONEQ }

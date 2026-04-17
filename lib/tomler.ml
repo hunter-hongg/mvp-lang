@@ -37,7 +37,7 @@ let toml_from_import import =
             let ret = "src/" ^ res ^ ".miva" in
             Some ret
           else 
-            let stdpath = try Sys.getenv "MIVA_STD" with _ -> "." in
+            let stdpath = Env.get_std_include_dir () in
             let pstack = String.split_on_char '/' import in
             let r = stdpath ^ "/" ^ string_get_head pstack ^ "/src/" ^ (String.concat "/" (List.tl pstack)) ^ ".miva" in
             Some r

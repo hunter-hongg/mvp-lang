@@ -10,8 +10,10 @@ module SymbolTable = Mvp_lib.Symbol_table
 module Warning = Mvp_lib.Warnings
 module Codegen = Mvp_lib.Codegen
 module Typegen = Mvp_lib.Typegen
+module AnonCheck = Mvp_lib.Anoncheck
+module Magical = Mvp_lib.Magical
 
-let compile_cpp ~verbose ~_input_file ~output_file ~project_type ~release =
+let compile_cpp ~verbose ~_input_file ~output_file ~project_type ~release ~releaseb =
   let build_dir = get_build_dir () in
   let cache_dir = get_cache_dir () in
   let std_include = get_std_include_dir () in
@@ -31,27 +33,26 @@ let compile_cpp ~verbose ~_input_file ~output_file ~project_type ~release =
   let incf = get_include_flag () in
   let cmd =
     sprintf "g++ %s %s -o %s -I%s -I%s -I%s -std=c++20 %s %s -c %s"
-      (if release then "-O2" else "-g")
+      (if release then (
+        if releaseb then "-O3" else "-O2"
+      ) else "-g")
       cpp_file obj_file cache_dir std_include build_dir 
       (if verbose then "" else "2>/dev/null") 
       (if String.compare project_type "lib" == 0 then "-fPIC" else "") incf
   in
   
   if Sys.command cmd <> 0 then (
-    if not verbose then (
-      failwith "compilation failed"
-    );
+    failwith "compilation failed"
   );
   
   if not (get_keep_cpp ()) then (
     ignore (Sys.command (sprintf "rm -f %s" cpp_file));
   );
   
-  if verbose then eprintf "\nCompiled successfully: %s\n%!" obj_file;
   obj_file
 
-let link_file ~obj_files ~output_file ~project_type =
-  let build_dir = get_build_dir () in
+let link_file ~obj_files ~output_file ~project_type ~release =
+  let build_dir = get_build_dir_rel release in
   let exe_file = build_dir ^ "/" ^ (
     if String.compare project_type "lib" == 0 then 
       "lib" ^ output_file
@@ -75,30 +76,39 @@ let link_file ~obj_files ~output_file ~project_type =
 
 let compile_program_obj ~input_file ~output_file ~_release ~with_warn =  
   let all_err = ref [] in
+  let all_warn = ref [] in
   let ast = parse_input_file input_file in
   let ast = Macro_expand.expand_macros ast in
   let ast = remove_duplicate_imports ast in
 
+  let flags = Magical.get_magical_flags ast in
   let symbol_table, errs = SymbolTable.build_symbol_table_werr ast in
   all_err := errs @ !all_err;
   let errs = Semantic.check_program ast in
   let errs = List.map (fun e -> (
-    "Error:" ^ e
+    e
   )) errs in
   all_err := errs @ !all_err;
   let errs = SymbolTable.check_circular_dependencies (input_file :: symbol_table.files) in
   all_err := errs @ !all_err;
   let errs = Typegen.check_defs input_file ast in
   all_err := errs @ !all_err;
-  let warnings = Warning.get_warnings ast in
+  let warns = Warning.get_warnings ast in
+  let warns, errwarns = Magical.filter_warnings warns flags in
+  all_warn := warns @ !all_warn;
+  all_err := errwarns @ !all_err;
+  let warns = AnonCheck.check_anon ast in
+  let warns, errwarns = Magical.filter_warnings warns flags in
+  all_warn := warns @ !all_warn;
+  all_err := errwarns @ !all_err;
 
   eprintf "%s\x1b[31m%s\x1b[0m%!" 
     (if !all_err <> [] then "\n" else "")
     (String.concat "\n" !all_err);
   if with_warn then (
     eprintf "%s\x1b[33m%s\x1b[0m%!" 
-      (if warnings <> [] then "\n" else "")
-      (String.concat "\n" warnings);
+      (if !all_warn <> [] then "\n" else "")
+      (String.concat "\n" !all_warn);
   );
 
   let cpp_code = Codegen.build_ir input_file ast in
@@ -138,4 +148,4 @@ let compile_program_obj ~input_file ~output_file ~_release ~with_warn =
     output_string oc_header header_code;
     close_out oc_header;
   );
-  cpp_file, !all_err <> []
+  cpp_file, !all_err <> [], flags

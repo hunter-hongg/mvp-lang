@@ -29,12 +29,12 @@ let rec is_copy_type types t =
 
 let rec check_expr ctx symbol_table e =
   let errs = ref [] in
-  let err loc msg = errs := !errs @ [format_loc loc ^ ":" ^ msg] in
+  let err loc msg code = errs := !errs @ ["[" ^ code ^ "] " ^ format_loc loc ^ ":" ^ msg] in
   let mark_moved loc name =
     if Env.mem name ctx.vars then (
       let info = Env.find name ctx.vars in
-      if info.state = `Moved then err loc ("use of moved value: " ^ name);
-      if info.is_ref_param then err loc ("cannot move ref parameter: " ^ name);
+      if info.state = `Moved then err loc ("use of moved value " ^ name) "E0001";
+      if info.is_ref_param then err loc ("cannot move ref parameter " ^ name) "E0002";
       let new_vars = Env.add name {info with state = `Moved} ctx.vars in
       ctx.vars <- new_vars
     )
@@ -43,37 +43,37 @@ let rec check_expr ctx symbol_table e =
   | EVar (loc, name) ->
     if Env.mem name ctx.vars then (
       let info = Env.find name ctx.vars in
-      if info.state = `Moved then err loc ("use after moving" ^ name)
+      if info.state = `Moved then err loc ("use of moved value " ^ name) "E0001";
     ) else (
-      errs := !errs @ [(format_loc loc) ^ ":" ^ "variable '" ^ name ^ "' not found"]
+      err loc ("variable '" ^ name ^ "' not found") "E0007";
     )
   | EMove (loc, name) -> (
     if Env.mem name ctx.vars then (
       mark_moved loc name
     ) else (
-      errs := !errs @ [(format_loc loc) ^ ":" ^ "variable '" ^ name ^ "' not found"]
+      err loc ("variable '" ^ name ^ "' not found") "E0007";
     )
   )
   | EClone (loc, name) ->
     if Env.mem name ctx.vars then (
       let info = Env.find name ctx.vars in
-      if info.state = `Moved then err loc ("use of moved value: " ^ name)
+      if info.state = `Moved then err loc ("use of moved value " ^ name) "E0001";
     ) else (
-      errs := !errs @ [(format_loc loc) ^ ":" ^ "variable '" ^ name ^ "' not found"]
+      err loc ("variable '" ^ name ^ "' not found") "E0007";
     )
   | ECall (loc, name, args) -> 
       (match Symbol_table.get_function_safety name symbol_table with
       | Some Symbol_table.Unsafe ->
-          err loc ("cannot call unsafe function '" ^ name ^ "' from safe function")
+          err loc ("cannot call unsafe function '" ^ name ^ "' from safe function") "E0009"
       | Some Symbol_table.Trusted ->
           () 
       | Some Symbol_table.Safe ->
           () 
       | None ->
           if String.starts_with ~prefix:"ffi." name then 
-            err loc ("cannot call unsafe ffi function '" ^ name ^ "' from safe function")
+            err loc ("cannot call unsafe ffi function '" ^ name ^ "' from safe function") "E0009"
           else
-            err loc ("unknown function: " ^ name)
+            err loc ("unknown function: " ^ name) "E0009"
       );
       List.iter (
         fun e -> let errsc = check_expr ctx symbol_table e in errs := !errs @ errsc
@@ -120,7 +120,7 @@ let rec check_expr ctx symbol_table e =
   | ECast (loc, e, _) -> let errsc = check_expr ctx symbol_table e in errs := !errs @ errsc
   | EChoose (loc, var_expr, when_branches, otherwise_opt) ->
       if otherwise_opt = None then
-        err loc "choose expression must have an otherwise branch";
+        err loc "choose expression must have an otherwise branch" "E0011";
       
       let errsc = check_expr ctx symbol_table var_expr in errs := !errs @ errsc;
       
@@ -168,13 +168,16 @@ let rec check_expr ctx symbol_table e =
           | SAssign (loc, name, e) ->
               if Env.mem name ctx.vars then (
                 let var_info = Env.find name ctx.vars in
-                if not var_info.is_mutable then err loc ("cannot assign to immutable variable: " ^ name);
-                if var_info.state = `Moved then err loc ("use of moved value: " ^ name);
+                if not var_info.is_mutable then 
+                  err loc ("cannot assign to immutable variable: " ^ name) "E0002";
+                if var_info.state = `Moved then err loc 
+                  ("use of moved value " ^ name) "E0001";
                 let errsc = check_expr ctx symbol_table e in errs := !errs @ errsc;
                 ctx.vars <- Env.add name {var_info with state = `Valid} ctx.vars
               )
           | SReturn (loc, e) -> let errsc = check_expr ctx symbol_table e in errs := !errs @ errsc
           | SExpr (loc, e) -> let errsc = check_expr ctx symbol_table e in errs := !errs @ errsc
+          | SCIntro (_, _) -> ()
         ) stmts;
       Option.iter (
         fun e -> let errsc = check_expr ctx symbol_table e in errs := !errs @ errsc
@@ -195,19 +198,19 @@ let rec check_expr ctx symbol_table e =
         ) saved_vars ctx.vars in
       
       ctx.vars <- propagated_vars
-  | EDeref (loc, e) -> err loc "cannot dereference a ptr in a safe function."
+  | EDeref (loc, e) -> err loc "cannot dereference a ptr in a safe function." "E0010"
   | _ -> () in
   !errs
 
 let check_program defs =
   let symbol_table = Symbol_table.build_symbol_table defs in
   let errs = ref [] in
-
+  let err loc msg code = errs := !errs @ ["[" ^ code ^ "] " ^ format_loc loc ^ ":" ^ msg] in
   let alias_module = List.filter_map((fun d -> (
   match d with 
   | SImportAs (loc, import, alias) -> (
     if String.starts_with ~prefix:"c:" import then (
-      errs := !errs @ [(format_loc loc) ^ ":cannot import c file with an alias"];
+      err loc "cannot import c file with an alias" "E0012";
       None
     ) else (
       (Wrapper.toml_deal_ias import alias)
@@ -276,25 +279,26 @@ let check_program defs =
   let has_module_decl = ref false in
   
   List.iter (function
-      | DModule (loc, name) ->
-          if !has_non_module_decl then
-            errs := !errs @ [ 
-              (format_loc loc) ^ ":module declaration 'module " ^ name ^ 
-                "' must be at the top of the file, before any other declarations"];
-          
-          if List.mem name !module_decls then
-            errs := !errs @ [
-              (format_loc loc) ^ ":duplicate module declaration: 'module " ^ name ^ "'"];
-          
-          module_decls := name :: !module_decls;
-          has_module_decl := true
-      | _ ->
-          has_non_module_decl := true
-    ) defs;
+    | DModule (loc, name) ->
+      if !has_non_module_decl then (
+        err loc ("module declaration must be at the top of the file") "E0005";
+      ); 
+      if List.mem name !module_decls then
+        err loc ("duplicate module declaration") "E0005";
+      if !has_module_decl then (
+        err loc ("program must have only one module declaration") "E0005";
+      );
+      module_decls := name :: !module_decls;
+      has_module_decl := true;
+    | _ ->
+      has_non_module_decl := true
+  ) defs;
   
   if not !has_module_decl then
-    errs := !errs @ [
-      "0:0:program must have one module declaration"];
+    err {
+      line = 0;
+      col = 0;
+    } "program must have one module declaration" "E0005";
   
   let types = List.fold_left (fun acc -> function
     | DStruct (_, name, fields) -> Env.add name fields acc
@@ -325,6 +329,20 @@ let check_program defs =
         errs := !errs @ errsc
     | DStruct (_, _, _) -> ()
     | DModule _ -> ()  
+    | DCMagical (loc, s) -> (
+      let s = String.trim s in
+      let sd = String.split_on_char ' ' s in
+      if List.length sd < 2 then (
+        err loc "magical comments isn't valid" "E0013";
+      )
+      else (
+        match List.hd sd with
+        | "warning_off" | "warning_err" | "release" | "mangle" -> ()
+        | s -> (
+          err loc ("invalid magical comment " ^ s) "E0013";
+        )
+      )
+    )
     | _ -> ()
   ) defs;
   
