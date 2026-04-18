@@ -57,6 +57,7 @@ and stmt =
   | SReturn of loc * expr
   | SExpr of loc * expr
   | SCIntro of loc * string
+  | SEmpty of loc
 
 and def =
   | DStruct of loc * string * (string * typ) list

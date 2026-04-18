@@ -1,25 +1,28 @@
+open Ast
+
 let version = "0.0.7"
-let builtin_functions = [
-  "print" ;
-  "prints" ;
-  "println" ;
-  "printlns" ;
-  "error" ;
-  "errors" ;
-  "errorln" ;
-  "errorlns" ;
-  "exit" ;
-  "abort" ;
-  "panic" ;
-  "string_concat" ;
-  "string_parse" ;
-  "string_length" ;
-  "string_make" ;
-  "string_from" ;
-  "box_new" ;
-  "box_deref" ;
-  "range" ;
+let builtin_functions_typ = [
+  ("print", TNull) ;
+  ("prints", TNull) ;
+  ("println", TNull) ;
+  ("printlns", TNull) ;
+  ("error", TNull) ;
+  ("errors", TNull) ;
+  ("errorln", TNull) ;
+  ("errorlns", TNull) ;
+  ("exit", TNull) ;
+  ("abort", TNull) ;
+  ("panic", TNull) ;
+  ("string_concat", TString) ;
+  ("string_parse", TInt) ;
+  ("string_length", TInt) ;
+  ("string_make", TString) ;
+  ("string_from", TString) ;
+  ("box_new", TBox(TInvalid)) ;
+  ("box_deref", TInvalid) ;
+  ("range", TArray(TInt)) ;
 ]
+let builtin_functions = List.map (fun (n, _) -> n) builtin_functions_typ
 let deperecated_msg dep inst macro = 
   Printf.sprintf "\"%s\" is deprecated, use %s \"%s\" instead" 
     dep (if macro then "macro" else "function") inst

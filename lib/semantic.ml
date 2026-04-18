@@ -178,6 +178,7 @@ let rec check_expr ctx symbol_table e =
           | SReturn (loc, e) -> let errsc = check_expr ctx symbol_table e in errs := !errs @ errsc
           | SExpr (loc, e) -> let errsc = check_expr ctx symbol_table e in errs := !errs @ errsc
           | SCIntro (_, _) -> ()
+          | SEmpty _ -> ()
         ) stmts;
       Option.iter (
         fun e -> let errsc = check_expr ctx symbol_table e in errs := !errs @ errsc

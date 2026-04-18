@@ -9,9 +9,10 @@
 %token <string> STRING_LIT
 %token <bool> BOOL_LIT
 %token <string> IDENT INTRO MAGICAL
+%token NEWLINE
 
 %token EQ COLONEQ DARROW LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET 
-%token COMMA DOT COLON 
+%token COMMA DOT COLON SEMI
 %token PLUS MINUS STAR EQEQ NEQ NOT LT GT 
 %token MUT REF OWN MOVE CLONE 
 %token IF ELIF ELSE RETURN WHILE LOOP FOR IN
@@ -67,7 +68,7 @@ program:
 
 
 def:
-  | name = IDENT EQ STRUCT LBRACE fields = separated_list(COMMA, field_decl) RBRACE
+  | name = IDENT EQ STRUCT LBRACE fields = separated_list(COMMA, field_decl) RBRACE 
     { DStruct ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, name, fields) }
   | name = IDENT EQ params = func_params COLON ret_typ = typ DARROW body = expr
     { DFunc ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, name, params, Some ret_typ, body) }
@@ -88,19 +89,20 @@ def:
   | TEST name = IDENT EQ LPAREN RPAREN COLON INT DARROW body = expr
     { DTest ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, name, body) }
 
-  | MODULE name = separated_nonempty_list(DOT, IDENT) { 
+  | MODULE name = separated_nonempty_list(DOT, IDENT) SEMI
+    { 
     DModule (
       { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, 
       String.concat "." name) }
-  | EXPORT symbol = IDENT { SExport ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, symbol) }
-  | IMPORT symbol = STRING_LIT { SImport ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, symbol) }
-  | IMPORT symbol = STRING_LIT AS alias = separated_nonempty_list(DOT, IDENT) {
+  | EXPORT symbol = IDENT SEMI { SExport ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, symbol) }
+  | IMPORT symbol = STRING_LIT SEMI { SImport ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, symbol) }
+  | IMPORT symbol = STRING_LIT AS alias = separated_nonempty_list(DOT, IDENT) SEMI {
         SImportAs (
           { line = $startpos.Lexing.pos_lnum; 
             col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, 
             symbol, 
             String.concat "." alias)}
-  | IMPORT symbol = STRING_LIT AS DOT {
+  | IMPORT symbol = STRING_LIT AS DOT SEMI {
     SImportHere(
       { line = $startpos.Lexing.pos_lnum; 
         col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, 
@@ -201,30 +203,31 @@ struct_init:
 (* ------------------------------------------------------ *)
 
 stmt:
-  | IDENT COLONEQ expr { SLet ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, false, $1, $3) }
-  | MUT IDENT COLONEQ expr { SLet ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, true, $2, $4) }
-  | IDENT EQ expr { SAssign ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, $1, $3) }  (* 赋值语句：x = 值 *)
-  | RETURN expr { SReturn ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, $2) }
-  | RETURN { let loc = { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 } in SReturn (loc, EVoid loc) }
-  | IF LPAREN cond = expr RPAREN LBRACE t = stmt_list expr_opt = expr_opt RBRACE elifs = elif_chain else_opt = else_opt { 
+  | IDENT COLONEQ expr SEMI { SLet ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, false, $1, $3) }
+  | MUT IDENT COLONEQ expr SEMI { SLet ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, true, $2, $4) }
+  | IDENT EQ expr SEMI { SAssign ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, $1, $3) }  (* 赋值语句：x = 值 *)
+  | RETURN expr SEMI { SReturn ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, $2) }
+  | RETURN SEMI { let loc = { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 } in SReturn (loc, EVoid loc) }
+  | IF LPAREN cond = expr RPAREN LBRACE t = stmt_list expr_opt = expr_opt RBRACE elifs = elif_chain else_opt = else_opt SEMI { 
       let loc = { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }
        in SExpr (loc, build_if_chain loc cond (EBlock (loc, t, expr_opt)) elifs else_opt) }
-  | WHILE LPAREN cond = expr RPAREN LBRACE t = stmt_list expr_opt = expr_opt RBRACE {
+  | WHILE LPAREN cond = expr RPAREN LBRACE t = stmt_list expr_opt = expr_opt RBRACE SEMI {
     let loc = { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }
     in SExpr (loc, EWhile (loc, cond, EBlock (loc, t, expr_opt)))
   }
-  | LOOP LBRACE t = stmt_list expr_opt = expr_opt RBRACE {
+  | LOOP LBRACE t = stmt_list expr_opt = expr_opt RBRACE SEMI {
     let loc = { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }
     in SExpr (loc, ELoop (loc, EBlock (loc, t, expr_opt)))
   }
-  | FOR i = IDENT IN LPAREN range = expr RPAREN LBRACE t = stmt_list expr_opt = expr_opt RBRACE {
+  | FOR i = IDENT IN LPAREN range = expr RPAREN LBRACE t = stmt_list expr_opt = expr_opt RBRACE SEMI {
     let loc = { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }
     in SExpr (loc, EFor (loc, i, range, EBlock (loc, t, expr_opt)))
   }
   | INTRO { SCIntro ( 
     { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }
   , $1) }
-  | expr { SExpr ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, $1) }
+  | expr SEMI { SExpr ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }, $1) }
+  | SEMI { SEmpty ({ line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }) }
 
 stmt_list:
   | stmts = list(stmt) { stmts }

@@ -95,11 +95,20 @@ let build_symbols start_file =
     | _ -> ()
   )) ast;
   maps := StringMap.add start_file [""] (!maps);
-  let build_sym defs = 
-    let mods = match StringMap.find_opt start_file (!maps) with 
+  let build_sym defs f = 
+    let mods = match StringMap.find_opt f (!maps) with 
     | Some mods -> List.map (fun m -> (
       if m <> "" then 
-        m ^ "."
+        if String.starts_with ~prefix:"std." m
+        then
+          let mn = "mvp_std." ^ (
+            String.concat "." (List.tl (
+              String.split_on_char '.' m
+            ))
+          ) ^ "." in 
+          mn
+        else
+          m ^ "."
       else 
         m
     )) mods
@@ -142,8 +151,8 @@ let build_symbols start_file =
   in
   List.iter (fun f -> (
     let ast = Wrapper.parse_input_file f in 
-    build_sym ast
-  )) (start_file :: deps);
+    build_sym ast f
+  )) (start_file :: deps @ [(Env.get_std_include_dir () ^ "/std/src/str.miva")]);
   (!sym_ret)
 
 let lookup_struct sym name = 
@@ -179,14 +188,33 @@ let rec type_of_expr sym env = function
     )
     | None -> TInvalid
   )
-  | ECall (_, name, _) -> (
-    match lookup_function sym name with 
+  | ECall (_, name, p) -> (
+    let tr = match lookup_function sym name with 
     | Some (_, return, _) -> (
       match return with 
       | Some t -> t
       | None -> TNull
     )
-    | None -> TInvalid
+    | None -> (
+      let t = List.filter_map (fun (n, t) -> (
+        if n = name then Some t else None
+      )) Global.builtin_functions_typ in
+      if t = [] then 
+        TInvalid
+      else (
+        match List.hd t with 
+        | TBox(TInvalid) -> (
+          TBox(type_of_expr sym env (List.hd p))
+        )
+        | TInvalid -> (
+          match (type_of_expr sym env (List.hd p)) with 
+          | TBox(t) -> t
+          | _ -> TInvalid
+          )
+        | ty -> ty
+      );
+    ) in 
+    tr
   )
   | EBinOp (_, o, e1, _) -> (match o with 
     | Add | Sub | Mul -> type_of_expr sym env e1
@@ -339,7 +367,10 @@ let rec make_sure_expr sym env expr =
           done
         )
       )
-      | None -> fail_if errs loc (true) "function not found"
+      | None -> (
+        Printf.printf "function not found: %s\n%!" name;
+        fail_if errs loc (true) "function not found"
+      )
     else
       ()
   )
@@ -405,6 +436,7 @@ and make_sure_block sym env expr =
         errs := !errs @ er;
       )
       | SCIntro (_, _) -> ()
+      | SEmpty _ -> ()
     )) sl;
     match e with 
     | Some e -> (

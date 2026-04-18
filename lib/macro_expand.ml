@@ -129,6 +129,7 @@ let expand_macros defs =
     | SReturn (loc, e) -> SReturn (loc, expand_expr e)
     | SExpr (loc, e) -> SExpr (loc, expand_expr e)
     | SCIntro (loc, intro) -> SCIntro (loc, intro)
+    | SEmpty loc -> SEmpty loc
   and expand_def = function
     | DFunc (loc, name, params, ret_typ, body) -> 
         DFunc (loc, name, params, ret_typ, expand_expr body)

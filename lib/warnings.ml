@@ -87,6 +87,7 @@ let get_warnings defs =
         )
       )
     )
+    | SEmpty _ -> ()
   in
   List.iter (function def ->
     match def with

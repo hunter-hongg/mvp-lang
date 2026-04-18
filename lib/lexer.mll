@@ -11,7 +11,11 @@ let ident = ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']*
 rule token = parse
 
   | [' ' '\t' '\r']     { token lexbuf }
-  | '\n'                { Lexing.new_line lexbuf; token lexbuf }
+  | '\n'
+    {
+      Lexing.new_line lexbuf; 
+      token lexbuf
+    }
 
   | "/*"                { comment lexbuf; token lexbuf }
   | "//" [^'\n']* '\n'? { Lexing.new_line lexbuf; token lexbuf }
@@ -32,6 +36,7 @@ rule token = parse
   | ','                 { COMMA }
   | '.'                 { DOT }
   | ':'                 { COLON }
+  | ';'                 { SEMI }
 
   | '+'                 { PLUS }
   | '-'                 { MINUS }

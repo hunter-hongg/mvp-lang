@@ -59,6 +59,7 @@ let rec cxx_stmt_of_stmt indent_level ctx stmt =
         ^ ")>, \"A non-Copy type can't be assigned without clone or move\");\n"
       )
   | SCIntro (_, _) -> ""
+  | SEmpty _ -> ""
 and cxx_expr_of_expr indent_level ctx expr = 
   match expr with
   | EInt (_, i) -> "static_cast<mvp_builtin_int>(" ^ Int64.to_string i ^ ")"
