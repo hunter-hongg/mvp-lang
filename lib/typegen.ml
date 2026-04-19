@@ -377,9 +377,18 @@ let rec make_sure_expr sym env expr =
   | ELoop (_, e) -> (
     errs := !errs @ make_sure_expr sym env e;
   )
-  | EFor (_, _, e1, e2) -> (
+  | EFor (loc, v, e1, e2) -> (
     errs := !errs @ make_sure_expr sym env e1;
-    errs := !errs @ make_sure_expr sym env e2;
+    match type_of_expr sym env e1 with
+    | TArray t -> (
+      let env = {
+        env with 
+        vars = env.vars @ [(v, t)]
+      } in
+      errs := !errs @ make_sure_expr sym env e2;
+    )
+    | _ -> fail_if errs loc (true) 
+      "for loop expression must be an array";
   )
   | EWhile (loc, cond, e) -> (
     errs := !errs @ make_sure_expr sym env cond;
