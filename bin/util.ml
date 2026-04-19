@@ -61,14 +61,14 @@ let find_and_set_project_dir () : bool =
   search_upwards current_dir
 
 
-let init_env_var () = 
-  if not (Sys.file_exists "miva.toml") then (
-    eprintf "Error: miva.toml not found.\n";
+let init_env_var_file f = 
+  if not (Sys.file_exists f) then (
+    eprintf "Error: toml not found.\n";
     exit 1 
   );
-  let file = read_file "miva.toml" in
+  let file = read_file f in
   let fail () = 
-    eprintf "Error: miva.toml is not a vaild miva project";
+    eprintf "Error: toml is not a vaild miva configuration";
     exit 1;
   in
   match Toml.Parser.from_string file with 
@@ -90,6 +90,12 @@ let init_env_var () =
   | _ -> (
     fail ()
   )
+
+let init_env_var () = 
+  let home = Sys.getenv "HOME" in
+  init_env_var_file (home ^ "/.miver/config/miva.toml");
+  init_env_var_file "miva.toml"
+
 
 let remove_duplicate_imports defs = 
   let import_set = ref StringSet.empty in
