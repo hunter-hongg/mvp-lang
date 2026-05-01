@@ -87,6 +87,7 @@ let check_anon defs =
     | SImportAs (loc, _, _)
     | SImportHere (loc, _)
     | SExport (loc, _)
+    | DImpl (loc, _, _)
     -> (
       match !pre with 
       | Some DCIntro (_, _) -> (

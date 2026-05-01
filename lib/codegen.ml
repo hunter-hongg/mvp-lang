@@ -413,6 +413,35 @@ let cxx_def_of_def indent_level ctx def =
   | DTest(_, _, _) -> ""
   | DCMagical (_, _) -> ""
   | DCIntro (_, _) -> ""
+  | DImpl (_, s, n) -> (
+    let ret = ref "" in
+    List.iter (fun n -> (
+      let op, fn = match n with
+      | EImpl (_, op, fn) -> op, fn
+      in
+      let ret_typ = match op with 
+        | ImAdd | ImSub | ImMul 
+          -> s
+        | ImEq | ImNeq 
+          -> "mvp_builtin_boolean" 
+      in
+      let operator = match op with
+        | ImAdd -> "+"
+        | ImSub -> "-"
+        | ImMul -> "*"
+        | ImEq -> "=="
+        | ImNeq -> "!="
+      in
+      let typs = s in
+      let func_sig = 
+        ret_typ ^ " operator" ^ operator ^ 
+          "(const " ^ typs ^ "& ____a, const " ^ 
+          typs ^ "& ____b) { return " ^ fn ^ "(____a, ____b); }\n"
+      in
+      ret := !ret ^ ind ^ func_sig ^ "\n"
+    )) n;
+    !ret
+  )
 
 
 let cxx_func_declaration func_name params ret_typ_opt =

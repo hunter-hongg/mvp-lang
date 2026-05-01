@@ -22,7 +22,8 @@
 %token TEST UNSAFE TRUSTED C_KEYWORD 
 %token EOF 
 %token PTR BOX ADDR DEREF PTRANY
-%token MODULE EXPORT IMPORT
+%token OP_ADD OP_SUB OP_MUL OP_EQ OP_NEQ
+%token MODULE EXPORT IMPORT IMPLEMENTS
 
 %type <Ast.def> def
 %type <Ast.def list> list(def)
@@ -114,6 +115,26 @@ def:
   | m = MAGICAL { DCMagical ( 
     { line = $startpos.Lexing.pos_lnum; col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1 }
   , m) }
+  | IMPLEMENTS stru = IDENT LBRACE l = separated_nonempty_list(COMMA, impl_decl) RBRACE {
+    DImpl({
+      line = $startpos.Lexing.pos_lnum;
+      col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1
+    },
+    stru, l)
+  }
+
+impl_decl:
+  | name = reg_op EQ func = IDENT { EImpl ({
+    line = $startpos.Lexing.pos_lnum;
+    col = $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1
+  }, name, func) }
+
+reg_op:
+  | OP_ADD { ImAdd }
+  | OP_SUB { ImSub }
+  | OP_MUL { ImMul }
+  | OP_EQ  { ImEq }
+  | OP_NEQ { ImNeq }
 
 func_params:
   | LPAREN RPAREN { [] }

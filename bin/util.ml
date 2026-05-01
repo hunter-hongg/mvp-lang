@@ -93,7 +93,9 @@ let init_env_var_file f =
 
 let init_env_var () = 
   let home = Sys.getenv "HOME" in
-  init_env_var_file (home ^ "/.miver/config/miva.toml");
+  let global_config = home ^ "/.miver/config/miva.toml" in
+  if Sys.file_exists global_config then
+    init_env_var_file global_config;
   init_env_var_file "miva.toml"
 
 

@@ -74,3 +74,14 @@ and def =
   | SImportHere of loc * string
   | DCMagical of loc * string
   | DCIntro of loc * string
+  | DImpl of loc * string * impl_expr list
+
+and impl_op = 
+  | ImAdd 
+  | ImSub
+  | ImMul
+  | ImEq
+  | ImNeq
+
+and impl_expr = 
+  | EImpl of loc * impl_op * string

@@ -78,6 +78,13 @@ rule token = parse
   | "module"            { MODULE }
   | "export"            { EXPORT }
   | "import"            { IMPORT }
+  | "impl"              { IMPLEMENTS }
+
+  | "op_add"            { OP_ADD }
+  | "op_sub"            { OP_SUB }
+  | "op_mul"            { OP_MUL }
+  | "op_eq"             { OP_EQ }
+  | "op_neq"            { OP_NEQ }
 
   | "ptr"               { PTR }
   | "box"               { BOX }
